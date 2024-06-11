@@ -1,0 +1,294 @@
+'''
+#EXAMPLE-1 in this i have used the keys is numeric
+expected_sensors = {
+    1: {1: 27, 2: 23, 3: 27, 4: 40, 5: 22},  # Example for floor 1
+    2: {1: 34, 2: 19, 3: 27, 4: 39, 5: 23}   # Example for floor 2
+}
+print(expected_sensors[1][1])  # Output: 27
+'''
+
+'''
+#EXAMPLE-2 with the 
+expected_sensors = {
+    'floor_1': {'zone_1': 27, 'zone_2': 23, 'zone_3': 27, 'zone_4': 40, 'zone_5': 22},  # Example for floor 1
+    'floor_2': {'zone_1': 34, 'zone_2': 19, 'zone_3': 27, 'zone_4': 39, 'zone_5': 23},    # Example for floor 2
+}
+print(expected_sensors['floor_1']['zone_4']) 
+'''
+# parminder sir fastag code
+
+#EXAMPLE-3 
+'''
+exception_code = {
+    "00": "active",
+    "01": "hotlist",
+    "02": "exempted",
+    "03": "low balance",
+    "04": "invalid carriage",
+    "05": "blacklist",
+    "06": "closed/replaced",
+    "02,01": "blacklist",
+    "03,02,01": "blacklist"
+}
+key = "03"
+description = exception_code.get(key)
+print(description)  # Output: low balance
+'''
+
+#EXAMPLE-4 
+'''
+vehicle_code = {
+    "1": "two wheeler",
+    "2": "three wheeler passenger",
+    "3": "three wheeler freight",
+    "4": "car/jeep/van",
+    "5": "light commercial vehicle 2-axle",
+    "6": "light commercial vehicle 2-axle",
+    "7": "bus 2-axle",
+    "8": "bus 3-axle",
+    "9": "mini bus",
+    "10": "truck 2-axle",
+    "11": "truck 3-axle",
+    "12": "truck 4-axle",
+    "13": "truck 5-axle",
+    "14": "truck 6-axle",
+    "15": "truck multi-axle",
+    "16": "earth moving machinery",
+    "17": "heavy construction machinery",
+    "18": "tractor",
+    "19": "tractor with trailer",
+    "20": "tata ace & mini light commercial vehicle"
+}
+
+# Example usage
+key = "3"
+vehicle_type = vehicle_code.get(key)
+print(vehicle_type)  # Output: car/jeep/van
+'''
+
+#EXAMPLE-5 
+'''
+import time
+import random
+
+def get_random_number():
+    timestamp = str(int(time.time()))
+    random_number = ''.join(random.sample(timestamp, len(timestamp)))
+    return random_number
+
+# Example usage
+print(get_random_number())
+'''
+
+#EXAMPLE-6
+'''
+import requests
+
+def get_signed_url(data):
+    url = 'http://127.0.0.1:5000/sign-xml'
+    headers = {
+        'Content-Type': 'text/plain'
+    }
+    response = requests.post(url, data=data, headers=headers)
+    return response.text
+
+# Example usage
+data = "your_data_here"
+print(get_signed_url(data))
+'''
+
+#EXAMPLE-7 
+'''
+def get_tag_info(tag_id):
+    random_number = get_random_number()
+    ts = datetime.now(ZoneInfo("Asia/Kolkata")).strftime('%Y-%m-%dT%H:%M:%S')
+    payload = f'<etc:ReqTagDetails xmlns:etc="http://npci.org/etc/schema/"><Head ver="1.0" ts="{ts}" orgId="POAA" msgId="CD712305{random_number}" /><Txn id="CD712305{random_number}" note="{ts}" refId="" refUrl="" ts="{ts}" type="FETCH" orgTxnId=""><Vehicle TID="" vehicleRegNo="" tagId="{tag_id}" /></Txn></etc:ReqTagDetails>'
+    url = "https://netc-acq.airtelbank.com:7443/etc/ReqTagDetails/10"
+    
+    file_path = get_signed_url(payload)
+    signedxml = requests.get(file_path).text
+    
+    headers = {'Content-Type': 'text/xml'}
+    response = requests.post(url, data=signedxml, headers=headers, verify=False)
+    result = response.text
+    http_code = response.status_code
+
+    tree = ET.ElementTree(ET.fromstring(result))
+    root = tree.getroot()
+
+    response_dict = {}
+    for child in root.iter():
+        response_dict[child.tag] = child.attrib
+
+    vehicle_info = {}
+    if 'VehicleDetails' in response_dict:
+        vehicle_details = response_dict['VehicleDetails']['Detail']
+        for detail in vehicle_details:
+            name = detail.get('name')
+            value = detail.get('value')
+            if name and value:
+                vehicle_info[name] = value
+
+    result = {}
+
+    if 'TAGID' in vehicle_info:
+        result['tagid'] = vehicle_info['TAGID']
+
+    if 'EXCCODE' in vehicle_info:
+        result['status'] = get_exception_code(vehicle_info['EXCCODE'])
+
+    if 'VEHICLECLASS' in vehicle_info:
+        vc = vehicle_info['VEHICLECLASS'].replace('VC', '')
+        result['vehtype'] = get_vehicle_type(vc)
+
+    if 'REGNUMBER' in vehicle_info:
+        result['vehno'] = vehicle_info['REGNUMBER']
+
+    if 'TID' in vehicle_info:
+        result['tid'] = vehicle_info['TID']
+
+    if 'VEHICLECLASS' in vehicle_info:
+        result['vehicleclass'] = vehicle_info['VEHICLECLASS']
+
+    if 'Resp' in response_dict and 'respCode' in response_dict['Resp']:
+        result['respcode'] = response_dict['Resp']['respCode']
+
+    if 'Head' in response_dict and 'msgId' in response_dict['Head']:
+        result['msgid'] = response_dict['Head']['msgId']
+
+    if 'Resp' in response_dict and 'result' in response_dict['Resp']:
+        result['result'] = response_dict['Resp']['result']
+
+    return result
+
+# Example usage
+tag_id = "your_tag_id_here"
+print(get_tag_info(tag_id))
+
+'''
+#EXAMPLE-8 get heart beat
+'''
+def get_heartbeat():
+    random_number = get_random_number()
+    ts = datetime.datetime.now().isoformat()
+    payload = f''<etc:TollplazaHbeatReq xmlns:etc="http://npci.org/etc/schema/">
+                    <Head msgId="HB712305{random_number}" orgId="POAA" ts="{ts}" ver="1.0" />
+                    <Txn id="HB712305{random_number}" note="{ts}" refId="" refUrl="" ts="{ts}" type="Hbt" orgTxnId="">
+                        <Meta>
+                            <Meta1 name="" value="" />
+                            <Meta2 name="" value="" />
+                        </Meta>
+                        <HbtMsg type="ALIVE" acquirerId="712305" />
+                        <Plaza geoCode="31.7096004,74.7973022" id="712305" name="AmritsarAirport" subtype="OPEN" type="PARKING" address="" fromDistrict="Amritsar" toDistrict="Amritsar" agencyCode="POAAC">
+                            <Lane id="1" direction="N" readerId="1" Status="OPEN" Mode="Normal" laneType="ETC" />
+                        </Plaza>
+                    </Txn>
+                  </etc:TollplazaHbeatReq>''
+    url = "https://netc-acq.airtelbank.com:7443/etc/TollplazaHbeatReq/10"
+    file_path = get_signed_url(payload)
+    signed_xml = read_file(file_path)
+    headers = {'Content-Type': 'text/xml'}
+    response = requests.post(url, data=signed_xml, headers=headers, verify=False)
+    return {"statusCode": response.status_code, "msgId": f"HB712305{random_number}"}
+'''
+#EXAMPLE-9 make transaction
+'''
+def make_transaction(tag_info, tariff_amount):
+    random_number = get_random_number()
+    ts = datetime.datetime.now().isoformat()
+    txnts = datetime.datetime.now().strftime("%dmyHis")
+    payload = f''<etc:ReqPay xmlns:etc="http://npci.org/etc/schema/">
+                    <Head msgId="RPA712305L01{random_number}" orgId="POAA" ts="{ts}" ver="1.0" />
+                    <Meta />
+                    <Txn id="712305L01{txnts}0" note="" orgTxnId="" refId="" refUrl="" ts="{ts}" type="DEBIT">
+                        <EntryTxn id="712305L01{txnts}0" ts="{ts}" tsRead="{tag_info['entryts']}" type="DEBIT" />
+                    </Txn>
+                    <Plaza geoCode="31.7096004,74.7973022" id="712305" name="AmritsarAirport" subtype="OPEN" type="PARKING">
+                        <EntryPlaza geoCode="31.7096004,74.7973022" id="712305" name="AmritsarAirport" subtype="OPEN" type="PARKING" />
+                        <Lane direction="N" id="1" readerId="1" Status="Open" Mode="Normal" laneType="Hybrid" ExitGate="1" Floor="1" />
+                        <EntryLane direction="N" id="1" readerId="1" Status="Open" Mode="Normal" laneType="Hybrid" EntryGate="1" Floor="1" />
+                        <ReaderVerificationResult publicKeyCVV="" procRestrictionResult="ok" signAuth="VALID" tagVerified="NETC TAG" ts="{ts}" txnCounter="0" txnStatus="SUCCESS" vehicleAuth="UNKNOWN">
+                            <TagUserMemory>
+                                <Detail name="TagSignature" value="{tag_info['signvalue']}" />
+                                <Detail name="TagVRN" value="XXXXXXXXXXXX" />
+                                <Detail name="TagVC" value="4" />
+                            </TagUserMemory>
+                        </ReaderVerificationResult>
+                    </Plaza>
+                    <Vehicle TID="{tag_info['tid']}" staticweight="" tagId="{tag_info['tagId']}" wim="">
+                        <VehicleDetails>
+                            <Detail name="AVC" value="{tag_info['avcvalue']}" />
+                            <Detail name="LPNumber" value="XXXXXXXXXXXX" />
+                        </VehicleDetails>
+                    </Vehicle>
+                    <Payment>
+                        <Amount IsOverWeightCharged="FALSE" PaymentMode="Tag" PriceMode="CUSTOM" curr="INR" value="{tariff_amount}">
+                            <OverwightAmount PaymentMode="Tag" curr="INR" value="0.0" />
+                        </Amount>
+                    </Payment>
+                  </etc:ReqPay>''
+    url = "https://netc-acq.airtelbank.com:7443/etc/ReqPay/10"
+    file_path = get_signed_url(payload)
+    signed_xml = read_file(file_path)
+    headers = {'Content-Type': 'text/xml'}
+    response = requests.post(url, data=signed_xml, headers=headers, verify=False)
+    return {"statusCode": response.status_code, "msgId": f"RPA712305L01{random_number}", "txnId": f"712305L01{txnts}0"}
+'''
+
+'''
+#EXAMPLE-10 check transaction
+def sync_time():
+    random_number = get_random_number()
+    ts = datetime.datetime.now().isoformat()
+    payload = f''<etc:ReqSyncTime xmlns:etc="http://npci.org/etc/schema/">
+                    <Head ver="1.0" ts="{ts}" orgId="POAA" msgId="ST712305{random_number}" />
+                  </etc:ReqSyncTime>''
+    url = "https://netc-acq.airtelbank.com:7443/etc/ReqSyncTime/10"
+    file_path = get_signed_url(payload)
+    signed_xml = read_file(file_path)
+    headers = {'Content-Type': 'text/xml'}
+    response = requests.post(url, data=signed_xml, headers=headers, verify=False)
+    with open(f"./synctimeapi/response_ST712305_{random_number}.xml", 'w') as file:
+        file.write(response.text)
+    response_data = parse_response(response.text)
+    head = response_data.get('Head', {}).get('@attributes', {})
+    resp = response_data.get('Resp', {}).get('@attributes', {})
+    vehicle = response_data.get('Resp', {}).get('Vehicle', {}).get('@attributes', {})
+    return {
+        "statusCode": response.status_code,
+        "msgId": head.get('msgId'),
+        "orgId": head.get('orgId'),
+        "respCode": resp.get('respCode'),
+        "result": resp.get('result'),
+        "errCode": vehicle.get('errCode')
+    }
+    '''
+    
+    #EXAMPLE-11 synctime example
+'''
+def sync_time():
+    random_number = get_random_number()
+    ts = datetime.datetime.now().isoformat()
+    payload = f''<etc:ReqSyncTime xmlns:etc="http://npci.org/etc/schema/">
+                    <Head ver="1.0" ts="{ts}" orgId="POAA" msgId="ST712305{random_number}" />
+                  </etc:ReqSyncTime>''
+    url = "https://netc-acq.airtelbank.com:7443/etc/ReqSyncTime/10"
+    file_path = get_signed_url(payload)
+    signed_xml = read_file(file_path)
+    headers = {'Content-Type': 'text/xml'}
+    response = requests.post(url, data=signed_xml, headers=headers, verify=False)
+    with open(f"./synctimeapi/response_ST712305_{random_number}.xml", 'w') as file:
+        file.write(response.text)
+    response_data = parse_response(response.text)
+    head = response_data.get('Head', {}).get('@attributes', {})
+    resp = response_data.get('Resp', {}).get('@attributes', {})
+    vehicle = response_data.get('Resp', {}).get('Vehicle', {}).get('@attributes', {})
+    return {
+        "statusCode": response.status_code,
+        "msgId": head.get('msgId'),
+        "orgId": head.get('orgId'),
+        "respCode": resp.get('respCode'),
+        "result": resp.get('result'),
+        "errCode": vehicle.get('errCode')
+    }
+    '''
