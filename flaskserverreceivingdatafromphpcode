@@ -1,0 +1,47 @@
+# php code send the data through the http post request and my flask will receive the data send by the php code
+
+<?php
+function display($data) {
+    $curl = curl_init();
+    curl_setopt_array($curl, array(
+    CURLOPT_URL => 'http://127.0.0.1:8000/receive_display',
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_ENCODING => '',
+    CURLOPT_MAXREDIRS => 10,
+    CURLOPT_TIMEOUT => 0,
+    CURLOPT_FOLLOWLOCATION => true,
+    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+    CURLOPT_CUSTOMREQUEST => 'POST',
+    CURLOPT_POSTFIELDS => $data,
+    CURLOPT_HTTPHEADER => array( 'Content-Type: text/plain'),
+    ));
+    $response = curl_exec($curl);
+    curl_close($curl);
+    return $response;
+}
+
+while (true) {
+    $data = "Hello, this is a continuous message from PHP at " . date('Y-m-d H:i:s');
+    echo "Sending data: " . $data . "\n";
+    $response = display($data);
+    echo "Response: " . $response . "\n";
+    sleep(5); // Sleep for 5 seconds before sending the next message
+}
+?>
+
+#STEP-2 flask server.
+from flask import Flask, request
+
+app = Flask(__name__)
+
+@app.route('/receive_display', methods=['POST'])
+def receive_display():
+    data = request.data.decode('utf-8')
+    print(f"Received data: {data}")
+    return 'Data received successfully', 200
+
+if __name__ == '__main__':
+    app.run(host='127.0.0.1', port=6000)
+
+
+#Note- maine simply vs code me apne senddatathroughapi.php ki ek file banaya hai ek folder python basic projects me. maine isi folder me apna flask ka file bhi rkha hai displayflask.py ke name se. maine dono ko run kiya to mujhe flask me apne data show ho rha hai
