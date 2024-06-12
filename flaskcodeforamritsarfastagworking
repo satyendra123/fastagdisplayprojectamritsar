@@ -1,0 +1,52 @@
+# ye code mera sahi se kaam kar rha hai ye amritsar me laga hai
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+@app.route('/receive-display', methods=['POST'])
+def receive_display():
+    #data = request.data.decode('utf-8')
+    data = request.get_json()
+    print(f"Received data: {data}")
+    status = data.get('status')
+    if status:
+        print(f"Received status: {status}")
+        return 'Data received successfully', 200
+    else:
+        return 'Status not found in received data', 400
+if __name__ == '__main__':
+    app.run(host='127.0.0.1', port=8000)
+    
+'''
+from flask import Flask, request, jsonify
+import serial
+
+app = Flask(__name__)
+
+# Define the serial port and baud rate
+SERIAL_PORT = 'COM3'  # e.g., 'COM3' on Windows or '/dev/ttyUSB0' on Linux
+BAUD_RATE = 9600
+
+# Initialize the serial connection
+ser = serial.Serial(SERIAL_PORT, baudrate=BAUD_RATE, timeout=0.1)
+
+# Function to send the status through the COM port
+def send_available_slots(status):
+    message = f'|C|1|4|1|28-0-#u{status}|'
+    ser.write(message.encode('ascii'))
+    print(f"Sent message: {message}")
+
+@app.route('/receive-display', methods=['POST'])
+def receive_display():
+    data = request.get_json()
+    status = data.get('status')
+    if status:
+        print(f"Received status: {status}")
+        send_available_slots(status)  # Directly pass the status as a string
+        return 'Data received and sent successfully', 200
+    else:
+        return 'Status not found in received data', 400
+
+if __name__ == '__main__':
+    app.run(host='127.0.0.1', port=8000)
+'''
