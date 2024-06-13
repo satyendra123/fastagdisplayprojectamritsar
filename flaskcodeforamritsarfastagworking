@@ -1,4 +1,3 @@
-# ye code mera sahi se kaam kar rha hai ye amritsar me laga hai
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
