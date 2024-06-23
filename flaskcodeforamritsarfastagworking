@@ -13,39 +13,79 @@ def receive_display():
         return 'Data received successfully', 200
     else:
         return 'Status not found in received data', 400
+        
+@app.route('/exitreceivedisplay', methods=['POST'])
+def exit_display():
+    #data = request.data.decode('utf-8')
+    data = request.get_json()
+    print(f"Received data: {data}")
+    price = data.get('price')
+    if price:
+        print(f"Exit Received data: {price}")
+        return 'Data received successfully', 200
+    else:
+        return 'Status not found in received data', 400
+        
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8000)
     
+
+
+#example-2 this is working code
 '''
-from flask import Flask, request, jsonify
+from flask import Flask, request
 import serial
+from time import sleep
 
 app = Flask(__name__)
 
-# Define the serial port and baud rate
-SERIAL_PORT = 'COM3'  # e.g., 'COM3' on Windows or '/dev/ttyUSB0' on Linux
-BAUD_RATE = 9600
+ser = serial.Serial('COM1', baudrate=9600, timeout=0.1)
 
-# Initialize the serial connection
-ser = serial.Serial(SERIAL_PORT, baudrate=BAUD_RATE, timeout=0.1)
+def send_data_to_display(car_number, status):
+    # Send car number to coordinate 0-0
 
-# Function to send the status through the COM port
-def send_available_slots(status):
-    message = f'|C|1|4|1|28-0-#u{status}|'
-    ser.write(message.encode('ascii'))
-    print(f"Sent message: {message}")
+    veh_no= car_number[-4:]
+    car_number_message = f'|C|1|4|1|0-0-#G{veh_no}|\r\n'
+    print(f"Sending car number message: {car_number_message}")  # Debug statement
+    ser.write(car_number_message.encode('ascii'))
+    ser.flush()  # Ensure the buffer is cleared
+    sleep(0.1)
+    
+    # Send status to coordinate 0-16
+    status_message = f'|C|1|4|1|0-16-#G{status}|\r\n'
+    print(f"Sending status message: {status_message}")  # Debug statement
+    ser.write(status_message.encode('ascii'))
+    ser.flush()  # Ensure the buffer is cleared
 
 @app.route('/receive-display', methods=['POST'])
 def receive_display():
     data = request.get_json()
+    print(f"Received data: {data}")
     status = data.get('status')
-    if status:
-        print(f"Received status: {status}")
-        send_available_slots(status)  # Directly pass the status as a string
+    vehno = data.get('vehno')
+    
+    if status and vehno:
+        print(f"Received status: {status} and vehicle number: {vehno}")
+        status = status.upper()
+        print(f"Converted status: {status}")
+        send_data_to_display(vehno, status)
         return 'Data received and sent successfully', 200
     else:
-        return 'Status not found in received data', 400
+        print("Status or vehicle number not found in received data")
+        return 'Status or vehicle number not found in received data', 400
 
+@app.route('/exitdisplay', methods=['POST'])
+def exit_display():
+    #data = request.data.decode('utf-8')
+    data = request.get_json()
+    print(f"Received data: {data}")
+    price = data.get('price')
+    if price:
+        print(f"Exit Received data: {price}")
+        return 'Data received successfully', 200
+    else:
+        return 'Status not found in received data', 400
+        
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8000)
 '''
