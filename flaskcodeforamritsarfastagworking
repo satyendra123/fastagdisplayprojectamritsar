@@ -39,49 +39,49 @@ from time import sleep
 
 app = Flask(__name__)
 
-ser = serial.Serial('COM1', baudrate=9600, timeout=0.1)
+# Ensure you have the correct serial port
+#ser = serial.Serial('COM1', baudrate=9600, timeout=0.1)
+ser=1
 
 def send_data_to_display(car_number, status):
-    # Send car number to coordinate 0-0
-
-    veh_no= car_number[-4:]
-    car_number_message = f'|C|1|4|1|0-0-#G{veh_no}|\r\n'
-    print(f"Sending car number message: {car_number_message}")  # Debug statement
-    ser.write(car_number_message.encode('ascii'))
-    ser.flush()  # Ensure the buffer is cleared
+    # Clear the display
+    clear_display_message = '|C|1|6|\r\n'
+    print(f"Sending clear display message: {clear_display_message}")  # Debug statement
+    ser.write(clear_display_message.encode('ascii'))
+    ser.flush()
     sleep(0.1)
     
-    # Send status to coordinate 0-16
-    status_message = f'|C|1|4|1|0-16-#G{status}|\r\n'
+    clear_display_message = '|C|2|6|\r\n'
+    print(f"Sending clear display message: {clear_display_message}")  # Debug statement
+    ser.write(clear_display_message.encode('ascii'))
+    ser.flush()
+    sleep(0.1)
+    # Send status to coordinate 0-20
+    
+    # Send car number to coordinate 0-0
+    veh_no = car_number
+    car_number_message = f'|C|1|4|1|0-0-#B{veh_no}|\r\n'
+    print(f"Sending car number message: {car_number_message}")  # Debug statement
+    ser.write(car_number_message.encode('ascii'))
+    ser.flush()
+    sleep(0.1)
+    
+
+    status_message = f'|C|2|4|1|10-0-#GRS-{status}|\r\n'
     print(f"Sending status message: {status_message}")  # Debug statement
     ser.write(status_message.encode('ascii'))
-    ser.flush()  # Ensure the buffer is cleared
+    ser.flush()
 
-@app.route('/receive-display', methods=['POST'])
-def receive_display():
-    data = request.get_json()
-    print(f"Received data: {data}")
-    status = data.get('status')
-    vehno = data.get('vehno')
-    
-    if status and vehno:
-        print(f"Received status: {status} and vehicle number: {vehno}")
-        status = status.upper()
-        print(f"Converted status: {status}")
-        send_data_to_display(vehno, status)
-        return 'Data received and sent successfully', 200
-    else:
-        print("Status or vehicle number not found in received data")
-        return 'Status or vehicle number not found in received data', 400
-
-@app.route('/exitdisplay', methods=['POST'])
+@app.route('/exitreceivedisplay', methods=['POST'])
 def exit_display():
-    #data = request.data.decode('utf-8')
     data = request.get_json()
     print(f"Received data: {data}")
     price = data.get('price')
-    if price:
+    veh_no = data.get('car_number')
+    if price and veh_no:
         print(f"Exit Received data: {price}")
+        print(f"Exit Received data: {veh_no}")
+        send_data_to_display(veh_no, price)
         return 'Data received successfully', 200
     else:
         return 'Status not found in received data', 400
