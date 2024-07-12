@@ -1,47 +1,15 @@
-from flask import Flask, request, jsonify
-
-app = Flask(__name__)
-
-@app.route('/receive-display', methods=['POST'])
-def receive_display():
-    #data = request.data.decode('utf-8')
-    data = request.get_json()
-    print(f"Received data: {data}")
-    status = data.get('status')
-    if status:
-        print(f"Received status: {status}")
-        return 'Data received successfully', 200
-    else:
-        return 'Status not found in received data', 400
-        
-@app.route('/exitreceivedisplay', methods=['POST'])
-def exit_display():
-    #data = request.data.decode('utf-8')
-    data = request.get_json()
-    print(f"Received data: {data}")
-    price = data.get('price')
-    if price:
-        print(f"Exit Received data: {price}")
-        return 'Data received successfully', 200
-    else:
-        return 'Status not found in received data', 400
-        
-if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=8000)
-    
-
-
 #example-2 this is working code
-'''
 from flask import Flask, request
 import serial
 from time import sleep
+#from unittest.mock import MagicMock
 
 app = Flask(__name__)
 
 # Ensure you have the correct serial port
-#ser = serial.Serial('COM1', baudrate=9600, timeout=0.1)
-ser=1
+ser = serial.Serial('COM1', baudrate=9600, timeout=0.1)
+# Mock the serial.Serial object
+#ser = MagicMock()
 
 def send_data_to_display(car_number, status):
     # Clear the display
@@ -60,7 +28,7 @@ def send_data_to_display(car_number, status):
     
     # Send car number to coordinate 0-0
     veh_no = car_number
-    car_number_message = f'|C|1|4|1|0-0-#B{veh_no}|\r\n'
+    car_number_message = f'|C|1|4|1|1-1-#G{veh_no}|\r\n'
     print(f"Sending car number message: {car_number_message}")  # Debug statement
     ser.write(car_number_message.encode('ascii'))
     ser.flush()
@@ -88,4 +56,3 @@ def exit_display():
         
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8000)
-'''
