@@ -169,7 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['CONTENT_TYPE']) && 
                             "respcode" => $transcationResp['statusCode'],
                             "entryts" => $entryTime,
                             "exitts" => $exitTime,
-                            "token" => $token
+                            "id" => 1
                         ];
                         exitdisplay($response);
                     }
@@ -261,7 +261,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['CONTENT_TYPE']) && 
                         "respcode" => $transcationResp['statusCode'],
                         "entryts" => $entryTime,
                         "exitts" => $exitTime,
-                        "token" => $token
+                        "id" => 2
                     ];
                     exitdisplay($response);
                 }
