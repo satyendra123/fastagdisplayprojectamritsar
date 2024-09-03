@@ -168,7 +168,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['CONTENT_TYPE']) && 
                             "price" => $tariffAmount,
                             "respcode" => $transcationResp['statusCode'],
                             "entryts" => $entryTime,
-                            "exitts" => $exitTime
+                            "exitts" => $exitTime,
+                            "token" => $token
                         ];
                         exitdisplay($response);
                     }
@@ -259,7 +260,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SERVER['CONTENT_TYPE']) && 
                         "price" => $tariffAmount,
                         "respcode" => $transcationResp['statusCode'],
                         "entryts" => $entryTime,
-                        "exitts" => $exitTime
+                        "exitts" => $exitTime,
+                        "token" => $token
                     ];
                     exitdisplay($response);
                 }
