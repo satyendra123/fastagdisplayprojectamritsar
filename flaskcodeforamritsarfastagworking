@@ -1,18 +1,12 @@
-#example-2 this is working code
+#this is the working code in amritsar
 from flask import Flask, request
 import serial
 from time import sleep
-#from unittest.mock import MagicMock
-
 app = Flask(__name__)
 
-# Ensure you have the correct serial port
-ser = serial.Serial('COM1', baudrate=9600, timeout=0.1)
-# Mock the serial.Serial object
-#ser = MagicMock()
+ser = serial.Serial('COM9', baudrate=9600, timeout=0.1)
 
 def send_data_to_display(car_number, status):
-    # Clear the display
     clear_display_message = '|C|1|6|\r\n'
     print(f"Sending clear display message: {clear_display_message}")  # Debug statement
     ser.write(clear_display_message.encode('ascii'))
@@ -55,4 +49,4 @@ def exit_display():
         return 'Status not found in received data', 400
         
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=8000)
+    app.run(host='0.0.0.0', port=8000)
