@@ -2,51 +2,73 @@
 from flask import Flask, request
 import serial
 from time import sleep
+
 app = Flask(__name__)
 
-ser = serial.Serial('COM9', baudrate=9600, timeout=0.1)
+ser = serial.Serial('COM1', baudrate=9600, timeout=0.1)
 
 def send_data_to_display(car_number, status):
+    # Clear display 1
     clear_display_message = '|C|1|6|\r\n'
-    print(f"Sending clear display message: {clear_display_message}")  # Debug statement
+    print(f"Sending clear display message for display 1: {clear_display_message}")
     ser.write(clear_display_message.encode('ascii'))
     ser.flush()
-    sleep(0.1)
-    
+    sleep(0.1)  # Increased delay to 1 second
+
+    # Clear display 2
     clear_display_message = '|C|2|6|\r\n'
-    print(f"Sending clear display message: {clear_display_message}")  # Debug statement
+    print(f"Sending clear display message for display 2: {clear_display_message}")
     ser.write(clear_display_message.encode('ascii'))
     ser.flush()
-    sleep(0.1)
-    # Send status to coordinate 0-20
-    
-    # Send car number to coordinate 0-0
-    veh_no = car_number
-    car_number_message = f'|C|1|4|1|1-1-#G{veh_no}|\r\n'
-    print(f"Sending car number message: {car_number_message}")  # Debug statement
+    sleep(0.1)  # Increased delay to 1 second
+
+    # Send car number to display 1
+    car_number_message = f'|C|1|4|1|1-1-#G{car_number}|\r\n'
+    print(f"Sending car number message to display 1: {car_number_message}")
     ser.write(car_number_message.encode('ascii'))
     ser.flush()
     sleep(0.1)
-    
 
+    # Send status to display 2
     status_message = f'|C|2|4|1|10-0-#GRS-{status}|\r\n'
-    print(f"Sending status message: {status_message}")  # Debug statement
+    print(f"Sending status message to display 2: {status_message}")
     ser.write(status_message.encode('ascii'))
     ser.flush()
+    sleep(5)
+
+    # Clear display 1 again
+    clear_display_message = '|C|1|6|\r\n'
+    print(f"Sending clear display message for display 1: {clear_display_message}")
+    ser.write(clear_display_message.encode('ascii'))
+    ser.flush()
+    sleep(0.1)
+
+    # Clear display 2 again
+    clear_display_message = '|C|2|6|\r\n'
+    print(f"Sending clear display message for display 2: {clear_display_message}")
+    ser.write(clear_display_message.encode('ascii'))
+    ser.flush()
+    sleep(0.1)
+
 
 @app.route('/exitreceivedisplay', methods=['POST'])
 def exit_display():
+    # Get JSON data from the request
     data = request.get_json()
     print(f"Received data: {data}")
+    
+    # Extract price and car number
     price = data.get('price')
     veh_no = data.get('car_number')
+
+    # Check if the required data is present
     if price and veh_no:
-        print(f"Exit Received data: {price}")
-        print(f"Exit Received data: {veh_no}")
+        print(f"Exit Received data - Price: {price}, Vehicle Number: {veh_no}")
         send_data_to_display(veh_no, price)
-        return 'Data received successfully', 200
+        return 'Data received and processed successfully', 200
     else:
-        return 'Status not found in received data', 400
-        
+        return 'Missing price or car number in the received data', 400
+
 if __name__ == '__main__':
+    # Run the Flask app
     app.run(host='0.0.0.0', port=8000)
