@@ -13,14 +13,14 @@ def send_data_to_display(car_number, status):
     print(f"Sending clear display message for display 1: {clear_display_message}")
     ser.write(clear_display_message.encode('ascii'))
     ser.flush()
-    sleep(0.1)  # Increased delay to 1 second
+    sleep(0.1)
 
     # Clear display 2
     clear_display_message = '|C|2|6|\r\n'
     print(f"Sending clear display message for display 2: {clear_display_message}")
     ser.write(clear_display_message.encode('ascii'))
     ser.flush()
-    sleep(0.1)  # Increased delay to 1 second
+    sleep(0.1)
 
     # Send car number to display 1
     car_number_message = f'|C|1|4|1|1-1-#G{car_number}|\r\n'
@@ -50,6 +50,14 @@ def send_data_to_display(car_number, status):
     ser.flush()
     sleep(0.1)
 
+def send_welcome_message_to_display():
+    # Send welcome message to both displays
+    welcome_message_1 = '|C|1|4|1|12-6-#GWELCOME|\r\n'
+    
+    print(f"Sending welcome message to display 1: {welcome_message_1}")
+    ser.write(welcome_message_1.encode('ascii'))
+    ser.flush()
+    sleep(0.1)
 
 @app.route('/exitreceivedisplay', methods=['POST'])
 def exit_display():
@@ -64,7 +72,13 @@ def exit_display():
     # Check if the required data is present
     if price and veh_no:
         print(f"Exit Received data - Price: {price}, Vehicle Number: {veh_no}")
+        
+        # Send data to display (car number and price)
         send_data_to_display(veh_no, price)
+        
+        # After sending data, display the welcome message
+        send_welcome_message_to_display()
+        
         return 'Data received and processed successfully', 200
     else:
         return 'Missing price or car number in the received data', 400
