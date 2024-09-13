@@ -1,3 +1,16 @@
+#note- isme maine python ki code se services banaya hai
+
+Microsoft Windows [Version 10.0.19045.4894]
+(c) Microsoft Corporation. All rights reserved.
+
+C:\WINDOWS\system32>cd C:\fastag_rfid\display
+
+C:\fastag_rfid\display>nssm.exe install housysfastagdisplay "%cd%\finaldisplay.exe"
+Service "housysfastagdisplay" installed successfully!
+
+C:\fastag_rfid\display>
+
+
 # final working code
 
 # from flask import Flask, request
