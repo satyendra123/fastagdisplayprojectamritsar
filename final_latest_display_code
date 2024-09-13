@@ -1,0 +1,207 @@
+# final working code
+
+# from flask import Flask, request
+# import serial
+# from time import sleep
+
+# app = Flask(__name__)
+
+# ser = serial.Serial('COM1', baudrate=9600, timeout=0.1)
+
+# def send_data_to_display(car_number, status):
+    #Clear display 1
+    # clear_display_message = '|C|1|6|\r\n'
+    # print(f"Sending clear display message for display 1: {clear_display_message}")
+    # ser.write(clear_display_message.encode('ascii'))
+    # ser.flush()
+    # sleep(0.1)
+
+    #Clear display 2
+    # clear_display_message = '|C|2|6|\r\n'
+    # print(f"Sending clear display message for display 2: {clear_display_message}")
+    # ser.write(clear_display_message.encode('ascii'))
+    # ser.flush()
+    # sleep(0.1)
+
+    #Send car number to display 1
+    # car_number_message = f'|C|1|4|1|1-1-#G{car_number}|\r\n'
+    # print(f"Sending car number message to display 1: {car_number_message}")
+    # ser.write(car_number_message.encode('ascii'))
+    # ser.flush()
+    # sleep(0.1)
+
+    #Send status to display 2
+    # status_message = f'|C|2|4|1|10-0-#GRS-{status}|\r\n'
+    # print(f"Sending status message to display 2: {status_message}")
+    # ser.write(status_message.encode('ascii'))
+    # ser.flush()
+    # sleep(5)
+
+    #Clear display 1 again
+    # clear_display_message = '|C|1|6|\r\n'
+    # print(f"Sending clear display message for display 1: {clear_display_message}")
+    # ser.write(clear_display_message.encode('ascii'))
+    # ser.flush()
+    # sleep(0.1)
+
+    #Clear display 2 again
+    # clear_display_message = '|C|2|6|\r\n'
+    # print(f"Sending clear display message for display 2: {clear_display_message}")
+    # ser.write(clear_display_message.encode('ascii'))
+    # ser.flush()
+    # sleep(0.1)
+
+# def send_welcome_message_to_display():
+    #Send welcome message to both displays
+    # welcome_message_1 = '|C|1|4|1|12-6-#GWELCOME|\r\n'
+    
+    # print(f"Sending welcome message to display 1: {welcome_message_1}")
+    # ser.write(welcome_message_1.encode('ascii'))
+    # ser.flush()
+    # sleep(0.1)
+
+# @app.route('/exitreceivedisplay', methods=['POST'])
+# def exit_display():
+    #Get JSON data from the request
+    # data = request.get_json()
+    # print(f"Received data: {data}")
+    
+    #Extract price and car number
+    # price = data.get('price')
+    # veh_no = data.get('car_number')
+
+    #Check if the required data is present
+    # if price and veh_no:
+        # print(f"Exit Received data - Price: {price}, Vehicle Number: {veh_no}")
+        
+        #Send data to display (car number and price)
+        # send_data_to_display(veh_no, price)
+        
+        #After sending data, display the welcome message
+        # send_welcome_message_to_display()
+        
+        # return 'Data received and processed successfully', 200
+    # else:
+        # return 'Missing price or car number in the received data', 400
+
+# if __name__ == '__main__':
+    #Run the Flask app
+    # app.run(host='0.0.0.0', port=8000)
+
+
+
+import mysql.connector
+import serial
+from time import sleep
+import threading
+
+ser = serial.Serial('COM7', baudrate=9600, timeout=0.1)
+
+db_config = {'host': '192.168.40.100','user': 'root','password': '','database': 'paytm_park'}
+
+def create_db_connection():
+    return mysql.connector.connect(**db_config)
+
+def send_welcome_message_to_display():
+    welcome_message_1 = '|C|1|4|1|12-6-#GWELCOME|\r\n'
+    print(f"Sending welcome message to display 1: {welcome_message_1}")
+    ser.write(welcome_message_1.encode('ascii'))
+    ser.flush()
+    sleep(0.1)
+
+def send_data_to_display(veh_number, price):
+    # Clear display 1
+    clear_display_message_1 = '|C|1|6|\r\n'
+    print(f"Sending clear display message for display 1: {clear_display_message_1}")
+    ser.write(clear_display_message_1.encode('ascii'))
+    ser.flush()
+    sleep(0.1)
+
+    # Clear display 2
+    clear_display_message_2 = '|C|2|6|\r\n'
+    print(f"Sending clear display message for display 2: {clear_display_message_2}")
+    ser.write(clear_display_message_2.encode('ascii'))
+    ser.flush()
+    sleep(0.1)
+
+    # Send vehicle number to display 1
+    car_number_message = f'|C|1|4|1|1-1-#G{veh_number}|\r\n'
+    print(f"Sending vehicle number to display 1: {car_number_message}")
+    ser.write(car_number_message.encode('ascii'))
+    ser.flush()
+    sleep(0.1)
+
+    # Send price (status) to display 2
+    price_message = f'|C|2|4|1|10-0-#GRS-{price}|\r\n'
+    print(f"Sending price to display 2: {price_message}")
+    ser.write(price_message.encode('ascii'))
+    ser.flush()
+    sleep(5)
+
+    # Clear displays again after showing the data
+    print("Clearing displays again.")
+    ser.write(clear_display_message_1.encode('ascii'))
+    ser.flush()
+    sleep(0.1)
+    ser.write(clear_display_message_2.encode('ascii'))
+    ser.flush()
+    sleep(0.1)
+
+def fetch_data():
+    while True:
+        conn = create_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        try:
+            select_query = "SELECT id, car_number, tarif_amount FROM display_response WHERE shown_on_screen = 1 AND display_id = 1"
+            cursor.execute(select_query)
+            result = cursor.fetchone()
+            if result:
+                print(f"Fetched Data: {result}")
+
+                car = result['car_number']
+                tarif = int(result['tarif_amount'])
+                print(f"Vehicle Number: {car}")
+                print(f"Tarif Amount: {tarif}")
+
+                send_data_to_display(car, tarif)
+                send_welcome_message_to_display()
+
+                update_query = "UPDATE display_response SET shown_on_screen = 0 WHERE id = %s"
+                cursor.execute(update_query, (result['id'],))
+                conn.commit()
+                print(f"Status updated to 0 for ID: {result['id']}")
+
+                cursor.execute("SELECT id, shown_on_screen FROM display_response WHERE id = %s", (result['id'],))
+                updated_result = cursor.fetchone()
+                print(f"Confirmed Status After Update: {updated_result}")
+                
+            else:
+                print("No row found with shown_on_screen = 1 and display_id = 1. Waiting for new data.")
+        except mysql.connector.Error as err:
+            print(f"Database error: {err}")
+        finally:
+            cursor.close()
+            conn.close()
+
+        sleep(5)
+
+def update_status():
+    while True:
+        conn = create_db_connection()
+        cursor = conn.cursor()
+        try:
+            pass
+        except mysql.connector.Error as err:
+            print(f"Database error: {err}")
+        finally:
+            cursor.close()
+            conn.close()
+
+        sleep(10)
+
+fetch_thread = threading.Thread(target=fetch_data)
+update_thread = threading.Thread(target=update_status)
+fetch_thread.start()
+update_thread.start()
+fetch_thread.join()
+update_thread.join()
