@@ -89,7 +89,7 @@
     # app.run(host='0.0.0.0', port=8000)
 
 
-
+# this code fetching the data from the database and display it in the p10 display
 import mysql.connector
 import serial
 from time import sleep
