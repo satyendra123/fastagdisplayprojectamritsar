@@ -1,3 +1,17 @@
+follow these lines for making the windows services
+step-1 open the cmd and write- cd C:\Parking Management System - Houston Systems\Services\BoomService\EntryBoompython
+step-2 so humara cmd ab is directory me open ho jayega aur hum ye command chalayenge exe banane ke liye- pyinstaller --onefile EntryBarrier.pyinstaller
+step-3 ab jo dist folder me jayenge aur waha se exe copy karke jaha apna sara file hai yaha par paste kar denge
+
+
+Note- jab client ko denge to hum code nahi balki direct exe denge aur ye config.txt file denge client jo hai apne hisab se changes kar lega is file me aur exe ko run kar dega
+so hume har bar files ke liye exe banane ki jarurat nahi hai
+
+step-4 is links me jakar NSSM ko download karle aur iske exe ko environment me path add kar denge exe ka https://nagasudhir.blogspot.com/2022/09/run-python-flask-server-as-windows.html
+step-5 cmd ko open karenge administrator me aur waha jayenge jaha humara exe files hai cd C:\Parking Management System - Houston Systems\Services\BoomService\EntryBoompython.
+        aur phir jab humara cmd is files and folder me aa jayega to ye command chalayenge services banane ke liye-  nssm.exe install HousysEntryBarrier "%cd%\EntryBarrier.exe"
+
+
 #note- isme maine python ki code se services banaya hai
 
 Microsoft Windows [Version 10.0.19045.4894]
