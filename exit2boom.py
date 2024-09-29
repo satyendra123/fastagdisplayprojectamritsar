@@ -11,7 +11,7 @@ step-4 is links me jakar NSSM ko download karle aur iske exe ko environment me p
 step-5 cmd ko open karenge administrator me aur waha jayenge jaha humara exe files hai cd C:\Parking Management System - Houston Systems\Services\BoomService\EntryBoompython.
         aur phir jab humara cmd is files and folder me aa jayega to ye command chalayenge services banane ke liye-  nssm.exe install HousysEntryBarrier "%cd%\EntryBarrier.exe"
 
-DbPath=server=127.0.0.1;user=root;password=;database=paytm_park;
+DbPath=host=127.0.0.1;user=root;password=;database=paytm_park;
 Server_IP=192.168.1.151
 Port=7000
 Retry_milisec=30000
@@ -26,7 +26,7 @@ import mysql.connector
 import threading
 
 CONFIG_FILE = "config.txt"
-LOG_FILE = "Exit_connection.txt"
+LOG_FILE = "logfile.txt"  # Define the log file name
 
 def read_config():
     config = {}
@@ -87,6 +87,19 @@ def check_exit_boom(client_socket, db_conn, timer_millisec):
     finally:
         cursor.close()
 
+def connect_to_db(db_config, retry_millisec, debug_mode):
+    """Tries to connect to the database, logs errors, and retries on failure."""
+    db_conn = None
+    while db_conn is None:
+        try:
+            db_conn = mysql.connector.connect(**db_config)
+            log_message("Database connection established.", debug_mode)
+        except mysql.connector.Error as err:
+            log_message(f"Database connection error: {err}", debug_mode)
+            log_message(f"Retrying in {retry_millisec} milliseconds...", debug_mode)
+            time.sleep(retry_millisec / 1000)  # Wait before retrying
+    return db_conn
+
 def main():
     config = read_config()
 
@@ -101,17 +114,21 @@ def main():
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+    # Initialize db_conn to None
+    db_conn = None
+
     try:
         client_socket.connect((SERVER_IP, SERVER_PORT))
         log_message(f"Connected to {SERVER_IP}:{SERVER_PORT}", DEBUG_LOG)
-        
-        db_conn = mysql.connector.connect(**db_config)
-        log_message("Database connection established in advance.", DEBUG_LOG)
-        
+
+        # Attempt to connect to the database and retry if failed
+        db_conn = connect_to_db(db_config, RETRY_MILLISECONDS, DEBUG_LOG)
+
+        # Start a thread to monitor exit boom status and interact with the database
         thread = threading.Thread(target=check_exit_boom, args=(client_socket, db_conn, TIMER_MILLISECONDS))
         thread.daemon = True
         thread.start()
-        
+
         while True:
             data = client_socket.recv(1024)
             if data:
@@ -126,8 +143,11 @@ def main():
     except Exception as e:
         log_message(f"An error occurred: {e}", DEBUG_LOG)
     finally:
-        client_socket.close()
-        db_conn.close()
+        # Safely close the client socket and the database connection if they exist
+        if client_socket:
+            client_socket.close()
+        if db_conn:
+            db_conn.close()
 
 if __name__ == "__main__":
     main()
