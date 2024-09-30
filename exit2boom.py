@@ -26,7 +26,8 @@ import mysql.connector
 import threading
 
 CONFIG_FILE = "config.txt"
-LOG_FILE = "logfile.txt"  # Define the log file name
+LOG_FILE = "Exit_Boom_services.txt"  # Define the log file name
+INITIAL_MESSAGE = "|ENTRY%"
 
 def read_config():
     config = {}
@@ -47,57 +48,64 @@ def parse_db_config(db_path):
             db_config[key] = value
     return db_config
 
-def log_message(message, debug_mode=True):
-    if not debug_mode:
-        return
-
+def log_message(message):
     with open(LOG_FILE, 'a') as log:
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         log.write(f"{timestamp}: {message}\n")
 
-def send_initial_message(client_socket):
+def send_message(client_socket, message):
     try:
-        client_socket.sendall(INITIAL_MESSAGE.encode())
-        log_message(f"Sent initial message: {INITIAL_MESSAGE}")
+        client_socket.sendall(message.encode())
+        log_message(f"Sent message: {message}")
     except Exception as e:
-        log_message(f"Failed to send initial message: {e}")
+        log_message(f"Failed to send message: {e}")
 
-def check_exit_boom(client_socket, db_conn, timer_millisec):
-    try:
-        cursor = db_conn.cursor()
-        while True:
-            cursor.execute("SELECT exitboom FROM boomsig1")
+def check_exit_boom(client_socket, db_config):
+    last_status = None
+    while True:
+        try:
+            conn = mysql.connector.connect(**db_config)
+            cursor = conn.cursor()
+
+            query = "SELECT exitboom FROM boomsig1"
+            cursor.execute(query)
+
             result = cursor.fetchone()
-
             if result:
                 exit_boom_status = result[0]
                 if exit_boom_status == 'Y':
-                    log_message("Exit boom is open")
-                    send_initial_message(client_socket)
-                    time.sleep(3)
-                    
-                    # Update the exitboom status back to 'N' after the message is sent
-                    cursor.execute("UPDATE boomsig1 SET exitboom = 'N'")
-                    db_conn.commit()
-                    log_message("Exit boom status reset to 'N' after 3 seconds")
+                    if last_status != 'Y':
+                        log_message("Exit boom is open")
+                        send_message(client_socket, INITIAL_MESSAGE)
+                        time.sleep(3)  # Simulate wait time
+                        
+                        # Update the exitboom status back to 'N'
+                        cursor.execute("UPDATE boomsig1 SET exitboom = 'N'")
+                        conn.commit()
+                        log_message("Exit boom status reset to 'N' after 3 seconds")
+                last_status = exit_boom_status
 
-            time.sleep(timer_millisec / 1000)  # Sleep for the timer duration
-    except mysql.connector.Error as err:
-        log_message(f"Database error: {err}")
-    finally:
-        cursor.close()
+            cursor.close()
+            conn.close()
+            time.sleep(3)  # Wait before next check
+        except mysql.connector.Error as err:
+            log_message(f"Database error: {err}")
+            time.sleep(3)  # Wait before retrying on error
+        except Exception as e:
+            log_message(f"Unexpected error: {e}")
+            break  # Exit the loop if an unexpected error occurs
 
-def connect_to_db(db_config, retry_millisec, debug_mode):
+def connect_to_db(db_config):
     """Tries to connect to the database, logs errors, and retries on failure."""
     db_conn = None
     while db_conn is None:
         try:
             db_conn = mysql.connector.connect(**db_config)
-            log_message("Database connection established.", debug_mode)
+            log_message("Database connection established.")
         except mysql.connector.Error as err:
-            log_message(f"Database connection error: {err}", debug_mode)
-            log_message(f"Retrying in {retry_millisec} milliseconds...", debug_mode)
-            time.sleep(retry_millisec / 1000)  # Wait before retrying
+            log_message(f"Database connection error: {err}")
+            log_message("Retrying in 3 seconds...")
+            time.sleep(3)  # Wait before retrying
     return db_conn
 
 def main():
@@ -106,26 +114,17 @@ def main():
     SERVER_IP = config['Server_IP']
     SERVER_PORT = int(config['Port'])
     DB_PATH = config['DbPath']
-    RETRY_MILLISECONDS = int(config['Retry_milisec'])
-    TIMER_MILLISECONDS = int(config['TimerMilliSec'])
-    DEBUG_LOG = config['DebugLog'] == 'True'
-    
+
     db_config = parse_db_config(DB_PATH)
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    # Initialize db_conn to None
-    db_conn = None
-
     try:
         client_socket.connect((SERVER_IP, SERVER_PORT))
-        log_message(f"Connected to {SERVER_IP}:{SERVER_PORT}", DEBUG_LOG)
-
-        # Attempt to connect to the database and retry if failed
-        db_conn = connect_to_db(db_config, RETRY_MILLISECONDS, DEBUG_LOG)
+        log_message(f"Connected to {SERVER_IP}:{SERVER_PORT}")
 
         # Start a thread to monitor exit boom status and interact with the database
-        thread = threading.Thread(target=check_exit_boom, args=(client_socket, db_conn, TIMER_MILLISECONDS))
+        thread = threading.Thread(target=check_exit_boom, args=(client_socket, db_config))
         thread.daemon = True
         thread.start()
 
@@ -134,20 +133,18 @@ def main():
             if data:
                 decoded_data = data.decode('utf-8')
                 if "|HLT%" in decoded_data:
-                    log_message(f"Received health packet: {decoded_data}", DEBUG_LOG)
+                    log_message(f"Received health packet: {decoded_data}")
 
     except ConnectionRefusedError:
-        log_message(f"Connection to {SERVER_IP}:{SERVER_PORT} was refused.", DEBUG_LOG)
+        log_message(f"Connection to {SERVER_IP}:{SERVER_PORT} was refused.")
     except TimeoutError:
-        log_message("Connection timed out. Check IP and port.", DEBUG_LOG)
+        log_message("Connection timed out. Check IP and port.")
     except Exception as e:
-        log_message(f"An error occurred: {e}", DEBUG_LOG)
+        log_message(f"An error occurred: {e}")
     finally:
-        # Safely close the client socket and the database connection if they exist
+        # Safely close the client socket
         if client_socket:
             client_socket.close()
-        if db_conn:
-            db_conn.close()
 
 if __name__ == "__main__":
     main()
